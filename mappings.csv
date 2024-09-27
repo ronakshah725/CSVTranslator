@@ -1,0 +1,29 @@
+Source,Platform A Field,Universal Template Field,Notes
+Order History,Timestamp (UTC),Date,
+Order History,Subtotal (USD),Sent Amount,For buy orders
+Order History,Volume (BTC),Sent Amount,For sell orders
+Order History,USD,Sent Currency,For buy orders
+Order History,BTC,Sent Currency,For sell orders
+Order History,Volume (BTC),Received Amount,For buy orders
+Order History,Subtotal (USD),Received Amount,For sell orders
+Order History,BTC,Received Currency,For buy orders
+Order History,USD,Received Currency,For sell orders
+Order History,Fee (USD),Fee Amount,
+Order History,USD,Fee Currency,
+Order History,,Net Worth Amount,Leave empty
+Order History,,Net Worth Currency,Leave empty
+Order History,,Label,Leave empty
+Order History,Reference Code,Description,Optional
+Order History,,TxHash,Leave empty
+Transfer History,Timestamp Initiated (UTC),Date,
+Transfer History,Total Amount (BTC),Sent Amount,Use positive value
+Transfer History,Asset,Sent Currency,
+Transfer History,,Received Amount,Leave empty
+Transfer History,,Received Currency,Leave empty
+Transfer History,Fee (BTC),Fee Amount,
+Transfer History,Asset,Fee Currency,
+Transfer History,,Net Worth Amount,Leave empty
+Transfer History,,Net Worth Currency,Leave empty
+Transfer History,,Label,Leave empty
+Transfer History,Reference Code,Description,Optional
+Transfer History,TXID,TxHash,
