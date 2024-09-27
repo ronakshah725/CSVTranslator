@@ -1,23 +1,28 @@
 import pytest
-from app import create_app, db
+import sys
+import os
 import io
+import json
+
+# Add the parent directory to sys.path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from app import create_app
 
 @pytest.fixture
 def client():
-    app = create_app('testing')
+    app = create_app()
+    app.config['TESTING'] = True
     with app.test_client() as client:
         with app.app_context():
-            db.create_all()
             yield client
-            db.session.remove()
-            db.drop_all()
 
 def test_upload_file(client):
     data = {'file': (io.BytesIO(b'Reference Code,Timestamp (UTC),Order Type,Side,Pair\n'), 'test.csv')}
     response = client.post('/upload', data=data, content_type='multipart/form-data')
     assert response.status_code == 200
-    assert 'columns' in response.json
-    assert 'preview' in response.json
+    assert 'columns' in json.loads(response.data)
+    assert 'preview' in json.loads(response.data)
 
 def test_process_files(client):
     order_data = io.BytesIO(b'Reference Code,Timestamp (UTC),Order Type,Side,Pair,Subtotal (USD),Fee (USD),Volume (BTC),Price (USD)\nXIB5DDWP,2024-01-06 00:41:58.537916Z,market,buy,BTCUSD,39.53,0.47,0.00089506,"44,164.64"')
@@ -29,4 +34,7 @@ def test_process_files(client):
     }
     response = client.post('/process', data=data, content_type='multipart/form-data')
     assert response.status_code == 200
-    assert len(response.json) == 2  # One order and one transfer
+    result = json.loads(response.data)
+    assert len(result) == 2  # One order and one transfer
+    assert 'sent_amount' in result[0]
+    assert 'sent_amount' in result[1]

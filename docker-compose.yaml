@@ -1,19 +1,25 @@
-version: '3'
 services:
   web:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "8080:5000"
     volumes:
       - .:/app
     environment:
       - FLASK_ENV=development
       - DATABASE_URL=sqlite:////app/app.db
+      - PYTHONPATH=/app
+    command: flask run --host=0.0.0.0
   tests:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     volumes:
       - .:/app
-    command: pytest
     environment:
       - FLASK_ENV=testing
       - DATABASE_URL=sqlite:////app/test.db
+      - PYTHONPATH=/app
+    command: pytest

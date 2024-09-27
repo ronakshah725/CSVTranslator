@@ -1,9 +1,17 @@
-from flask import request, jsonify
-from app import app, db
-from app.models import UniversalTemplate
-import pandas as pd
+from flask import Blueprint, request, jsonify
+from app.utils import load_mappings, process_order_history, process_transfer_history
+import csv
+import io
 
-@app.route('/upload', methods=['POST'])
+bp = Blueprint('main', __name__)
+
+mappings = load_mappings('mappings.csv')
+
+@bp.route('/')
+def index():
+    return "Welcome to the CSV Translator API"
+
+@bp.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
         return jsonify({"error": "No file part"}), 400
@@ -11,10 +19,12 @@ def upload_file():
     if file.filename == '':
         return jsonify({"error": "No selected file"}), 400
     if file:
-        df = pd.read_csv(file)
-        return jsonify({"columns": df.columns.tolist(), "preview": df.head().to_dict('records')})
+        content = file.stream.read().decode('utf-8')
+        csv_input = csv.DictReader(io.StringIO(content))
+        preview = list(csv_input)[:5]  # First 5 rows for preview
+        return jsonify({"columns": csv_input.fieldnames, "preview": preview})
 
-@app.route('/process', methods=['POST'])
+@bp.route('/process', methods=['POST'])
 def process_files():
     order_file = request.files.get('order_file')
     transfer_file = request.files.get('transfer_file')
@@ -22,18 +32,15 @@ def process_files():
     result = []
     
     if order_file:
-        order_df = pd.read_csv(order_file)
-        for _, row in order_df.iterrows():
-            universal_entry = UniversalTemplate.from_order_history(row)
-            db.session.add(universal_entry)
-            result.append(universal_entry.to_dict())
+        content = order_file.stream.read().decode('utf-8')
+        csv_input = csv.DictReader(io.StringIO(content))
+        for row in csv_input:
+            result.append(process_order_history(row, mappings))
     
     if transfer_file:
-        transfer_df = pd.read_csv(transfer_file)
-        for _, row in transfer_df.iterrows():
-            universal_entry = UniversalTemplate.from_transfer_history(row)
-            db.session.add(universal_entry)
-            result.append(universal_entry.to_dict())
+        content = transfer_file.stream.read().decode('utf-8')
+        csv_input = csv.DictReader(io.StringIO(content))
+        for row in csv_input:
+            result.append(process_transfer_history(row, mappings))
     
-    db.session.commit()
     return jsonify(result)

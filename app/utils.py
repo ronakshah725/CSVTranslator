@@ -1,20 +1,34 @@
-import pandas as pd
+import csv
+from datetime import datetime
 
-def validate_csv(file, expected_columns):
-    df = pd.read_csv(file)
-    missing_columns = set(expected_columns) - set(df.columns)
-    if missing_columns:
-        raise ValueError(f"Missing columns in CSV: {', '.join(missing_columns)}")
-    return df
+def load_mappings(file_path):
+    mappings = []
+    with open(file_path, 'r') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            mappings.append(row)
+    return mappings
 
-def get_order_history_columns():
-    return [
-        'Reference Code', 'Timestamp (UTC)', 'Order Type', 'Side', 'Pair',
-        'Subtotal (USD)', 'Fee (USD)', 'Volume (BTC)', 'Price (USD)'
-    ]
+def process_order_history(order, mappings):
+    is_buy = order['Side'].lower() == 'buy'
+    return {
+        'date': datetime.strptime(order['Timestamp (UTC)'], '%Y-%m-%d %H:%M:%S.%fZ'),
+        'sent_amount': float(order['Subtotal (USD)']) if is_buy else float(order['Volume (BTC)']),
+        'sent_currency': 'USD' if is_buy else 'BTC',
+        'received_amount': float(order['Volume (BTC)']) if is_buy else float(order['Subtotal (USD)']),
+        'received_currency': 'BTC' if is_buy else 'USD',
+        'fee_amount': float(order['Fee (USD)']),
+        'fee_currency': 'USD',
+        'description': f"Reference Code: {order['Reference Code']}"
+    }
 
-def get_transfer_history_columns():
-    return [
-        'Reference Code', 'Account', 'Asset', 'Timestamp Initiated (UTC)',
-        'Type', 'Direction', 'TXID', 'Total Amount (BTC)', 'Fee (BTC)'
-    ]
+def process_transfer_history(transfer, mappings):
+    return {
+        'date': datetime.strptime(transfer['Timestamp Initiated (UTC)'], '%Y-%m-%d %H:%M:%S.%fZ'),
+        'sent_amount': abs(float(transfer['Total Amount (BTC)'])),
+        'sent_currency': transfer['Asset'],
+        'fee_amount': float(transfer['Fee (BTC)']),
+        'fee_currency': transfer['Asset'],
+        'description': f"Reference Code: {transfer['Reference Code']}",
+        'tx_hash': transfer['TXID']
+    }
